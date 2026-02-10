@@ -1,0 +1,8 @@
+{
+  "site_id": "site_001",
+  "name": "Front Gate Camera",
+  "location": "Main Entrance",
+  "stream_url": "rtsp://user:pass@ip/stream",
+  "vendor": "Hikvision",
+  "model": "DS-2CD"
+}

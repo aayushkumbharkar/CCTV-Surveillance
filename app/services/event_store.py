@@ -1,21 +1,8 @@
 import psycopg2
 from psycopg2.extras import Json, RealDictCursor
 from app.schemas.event import Event
+from app.db import get_db_connection
 from typing import Optional
-
-# -------------------------
-# Database configuration
-# -------------------------
-DB_CONFIG = {
-    "host": "localhost",
-    "port": 5432,
-    "dbname": "cctv_db",
-    "user": "cctv_user",
-    "password": "cctv_password"
-}
-
-def get_db_connection():
-    return psycopg2.connect(**DB_CONFIG)
 
 # -------------------------
 # WRITE: Save Event
@@ -48,7 +35,7 @@ def save_event(event: Event):
     cursor.execute(
         query,
         (
-            str(event.event_id),              # UUID → string
+            str(event.event_id),
             event.event_type,
             event.timestamp,
             event.source,
@@ -86,7 +73,7 @@ def fetch_events(
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-    base_query = """
+    query = """
         SELECT
             event_id,
             event_type,
@@ -107,44 +94,70 @@ def fetch_events(
     params = []
 
     if site_id:
-        base_query += " AND site_id = %s"
+        query += " AND site_id = %s"
         params.append(site_id)
 
     if camera_id:
-        base_query += " AND camera_id = %s"
+        query += " AND camera_id = %s"
         params.append(camera_id)
 
     if event_type:
-        base_query += " AND event_type = %s"
+        query += " AND event_type = %s"
         params.append(event_type)
 
     if severity:
-        base_query += " AND severity = %s"
+        query += " AND severity = %s"
         params.append(severity)
 
     if source:
-        base_query += " AND source = %s"
+        query += " AND source = %s"
         params.append(source)
 
     if from_timestamp:
-        base_query += " AND timestamp >= %s"
+        query += " AND timestamp >= %s"
         params.append(from_timestamp)
 
     if to_timestamp:
-        base_query += " AND timestamp <= %s"
+        query += " AND timestamp <= %s"
         params.append(to_timestamp)
 
-    base_query += """
+    query += """
         ORDER BY timestamp DESC
         LIMIT %s OFFSET %s
     """
 
     params.extend([limit, offset])
 
-    cursor.execute(base_query, tuple(params))
+    cursor.execute(query, tuple(params))
     events = cursor.fetchall()
 
     cursor.close()
     conn.close()
 
     return events
+
+# -------------------------
+# UPDATE: Event Status
+# -------------------------
+def update_event_status(event_id: str, status: str) -> bool:
+    """
+    Update status of an event.
+    Returns True if updated, False if event not found.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    query = """
+        UPDATE events
+        SET status = %s
+        WHERE event_id = %s
+    """
+
+    cursor.execute(query, (status, event_id))
+    updated = cursor.rowcount > 0
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return updated
