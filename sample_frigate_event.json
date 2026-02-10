@@ -1,0 +1,10 @@
+{
+    "after": {
+        "id": "1707567890.123456-abc123",
+        "label": "person",
+        "camera": "front_door",
+        "start_time": 1707567890.5,
+        "score": 0.92,
+        "snapshot": "http://frigate.local/api/events/1707567890.123456-abc123/snapshot.jpg"
+    }
+}

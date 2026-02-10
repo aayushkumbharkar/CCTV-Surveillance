@@ -1,21 +1,19 @@
 from fastapi import APIRouter, HTTPException, Query
 from app.schemas.event import Event
-from app.services.event_store import save_event, fetch_events
+from app.services.event_store import (
+    save_event,
+    fetch_events,
+    update_event_status
+)
 from typing import Optional
-
-
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
 # -------------------------
-# POST /events  (Create)
+# POST /events (Create)
 # -------------------------
 @router.post("/")
 def create_event(event: Event):
-    """
-    Receives an event, validates it using Pydantic,
-    and stores it via the service layer.
-    """
     try:
         save_event(event)
         return {
@@ -27,7 +25,7 @@ def create_event(event: Event):
 
 
 # -------------------------
-# GET /events  (Read + Pagination + Filters)
+# GET /events (Read + Pagination + Filters)
 # -------------------------
 @router.get("/")
 def list_events(
@@ -68,6 +66,30 @@ def list_events(
                 "to_timestamp": to_timestamp
             },
             "events": events
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# -------------------------
+# PATCH /events/{event_id}/status (Update)
+# -------------------------
+@router.patch("/{event_id}/status")
+def update_event_status_api(
+    event_id: str,
+    status: str = Query(..., description="New event status")
+):
+    try:
+        updated = update_event_status(event_id, status)
+
+        if not updated:
+            raise HTTPException(status_code=404, detail="Event not found")
+
+        return {
+            "status": "success",
+            "event_id": event_id,
+            "new_status": status
         }
 
     except Exception as e:
